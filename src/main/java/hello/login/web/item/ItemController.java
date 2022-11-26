@@ -2,6 +2,9 @@ package hello.login.web.item;
 
 import hello.login.domain.item.Item;
 import hello.login.domain.item.ItemRepository;
+import hello.login.domain.login.LoginService;
+import hello.login.domain.member.Member;
+import hello.login.web.SessionConst;
 import hello.login.web.item.form.ItemSaveForm;
 import hello.login.web.item.form.ItemUpdateForm;
 import lombok.RequiredArgsConstructor;
@@ -31,9 +34,16 @@ public class ItemController {
     }
 
     @GetMapping("/{itemId}")
-    public String item(@PathVariable long itemId, Model model) {
+    public String item(@SessionAttribute(name = SessionConst.LOGIN_MEMBER, required = false) Member loginMember,
+                       @PathVariable long itemId, Model model) {
         Item item = itemRepository.findById(itemId);
         model.addAttribute("item", item);
+
+        if (loginMember != null) {
+            boolean equals = loginMember.getId().equals(item.getMemberId());
+            model.addAttribute("equals", equals);
+        }
+
         return "items/item";
     }
 
@@ -44,7 +54,9 @@ public class ItemController {
     }
 
     @PostMapping("/add")
-    public String addItem(@Validated @ModelAttribute("item") ItemSaveForm form, BindingResult bindingResult, RedirectAttributes redirectAttributes) {
+    public String addItem(@SessionAttribute(name = SessionConst.LOGIN_MEMBER, required = false) Member loginMember,
+                          @Validated @ModelAttribute("item") ItemSaveForm form, BindingResult bindingResult,
+                          RedirectAttributes redirectAttributes, Model model) {
 
         //특정 필드 예외가 아닌 전체 예외
         if (form.getPrice() != null && form.getQuantity() != null) {
@@ -64,6 +76,10 @@ public class ItemController {
         item.setItemName(form.getItemName());
         item.setPrice(form.getPrice());
         item.setQuantity(form.getQuantity());
+
+        if (loginMember != null) {
+            item.setMemberId(loginMember.getId());
+        }
 
         Item savedItem = itemRepository.save(item);
         redirectAttributes.addAttribute("itemId", savedItem.getId());
@@ -103,4 +119,9 @@ public class ItemController {
         return "redirect:/items/{itemId}";
     }
 
+    @GetMapping("/{itemId}/remove")
+    public String remove(@PathVariable Long itemId) {
+        itemRepository.remove(itemId);
+        return "redirect:/items";
+    }
 }

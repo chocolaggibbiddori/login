@@ -9,6 +9,7 @@ public class Item {
     private String itemName;
     private Integer price;
     private Integer quantity;
+    private Long memberId;
 
     public Item() {
     }
